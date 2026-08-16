@@ -11,7 +11,7 @@ export function haversine(a: HabitatNode, b: HabitatNode) {
   return 2 * radius * Math.asin(Math.sqrt(value));
 }
 
-export function analyzeConnectivity(nodes: HabitatNode[], thresholdKm = CONNECTION_THRESHOLD_KM): GraphAnalysis {
+export function analyzeConnectivity(nodes: HabitatNode[], thresholdKm = CONNECTION_THRESHOLD_KM, intervention?: { nodeId: string; reachKm: number }): GraphAnalysis {
   const edges: Edge[] = [];
   const neighbors = new Map(nodes.map((node) => [node.id, new Set<string>()]));
   const nearest: number[] = [];
@@ -21,7 +21,8 @@ export function analyzeConnectivity(nodes: HabitatNode[], thresholdKm = CONNECTI
     nodes.slice(index + 1).forEach((other) => {
       const distanceKm = haversine(node, other);
       nearestDistance = Math.min(nearestDistance, distanceKm);
-      if (distanceKm <= thresholdKm) {
+      const connectionThreshold = intervention && (node.id === intervention.nodeId || other.id === intervention.nodeId) ? thresholdKm + intervention.reachKm : thresholdKm;
+      if (distanceKm <= connectionThreshold) {
         edges.push({ source: node.id, target: other.id, distanceKm });
         neighbors.get(node.id)?.add(other.id);
         neighbors.get(other.id)?.add(node.id);
@@ -59,6 +60,23 @@ export function analyzeConnectivity(nodes: HabitatNode[], thresholdKm = CONNECTI
     isolated,
     averageNearestKm: nearest.reduce((sum, distance) => sum + distance, 0) / Math.max(nearest.length, 1),
     score,
+  };
+}
+
+export function analyzeIntervention(nodes: HabitatNode[], userSpace: HabitatNode, thresholdKm = CONNECTION_THRESHOLD_KM, reachKm = 0) {
+  const before = analyzeConnectivity(nodes, thresholdKm);
+  const after = analyzeConnectivity([...nodes, userSpace], thresholdKm, { nodeId: userSpace.id, reachKm });
+  const beforeEdges = new Set(before.edges.map((edge) => [edge.source, edge.target].sort().join("-")));
+  const newEdges = after.edges.filter((edge) => !beforeEdges.has([edge.source, edge.target].sort().join("-")));
+  const componentByNode = new Map(before.components.flatMap((component, index) => component.map((id) => [id, index] as const)));
+  const joinedComponents = new Set(newEdges.map((edge) => componentByNode.get(edge.source === userSpace.id ? edge.target : edge.source)).filter((index) => index != null));
+  const bridgedComponents = Math.max(0, joinedComponents.size - 1);
+
+  return {
+    before,
+    after: newEdges.length ? after : { ...after, score: before.score },
+    newConnections: newEdges.length,
+    bridgedComponents,
   };
 }
 

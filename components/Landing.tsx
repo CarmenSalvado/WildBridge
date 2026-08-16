@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ArrowDown, ArrowRight, Map, Network, Sprout } from "lucide-react";
+import { demoSpace, portlandHabitats } from "@/data/portland";
+import { analyzeIntervention } from "@/lib/connectivity";
 import { NetworkMotif } from "./NetworkMotif";
 
 const steps = [
@@ -8,6 +10,8 @@ const steps = [
   ["03", "Add your space", "Try a balcony, yard, patio, or window box."],
   ["04", "See the bridge", "Watch your potential connections come to life."],
 ];
+const demoImpact = analyzeIntervention(portlandHabitats, demoSpace);
+const demoGain = demoImpact.after.score - demoImpact.before.score;
 
 export function Landing() {
   return (
@@ -59,7 +63,7 @@ export function Landing() {
         <div className="hero-visual" aria-hidden="false">
           <div className="hero-visual-label"><span>Habitat connectivity</span><b>Potential bridge found</b></div>
           <NetworkMotif />
-          <div className="hero-score"><span>Bridge Score</span><b>42 <i>→</i> 67</b><small>+25 potential</small></div>
+          <div className="hero-score"><span>Bridge Score</span><b>{demoImpact.before.score} <i>→</i> {demoImpact.after.score}</b><small>+{demoGain} potential</small></div>
         </div>
       </section>
 

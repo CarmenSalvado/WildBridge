@@ -2,7 +2,7 @@
 
 **Instead of helping you find nature, WildBridge helps you rebuild it.**
 
-WildBridge is a map-driven urban habitat tool built for OregonHacks 2026. It reveals gaps between nearby green spaces and shows how a balcony, yard, patio, school garden, or window box could become a small stepping stone for nature.
+WildBridge is a map-driven urban habitat tool built for OregonHacks 2026. It helps Oregon and Pacific Northwest residents with balconies, yards, patios, school gardens, or window boxes understand where their real space could strengthen nearby urban habitat.
 
 The complete flow takes under a minute: search a real location, inspect a highlighted habitat gap, add a space, choose its conditions, and watch the connectivity graph recalculate in a clear before/after view.
 
@@ -17,10 +17,12 @@ Urban nature is often fragmented into isolated patches. Parks, gardens, and tree
 - Renders live OpenStreetMap tiles and graph overlays with Leaflet.
 - Represents those patches as nodes in a connectivity graph.
 - Highlights a possible gap between close but unconnected patches.
-- Lets a user configure a balcony, window, yard, patio, or community space.
-- Inserts that space into the graph and recalculates connectivity.
+- Starts from the searched address or device location and lets the user place their space precisely on the map.
+- Uses space size to adjust the intervention reach, then recalculates its actual graph connections.
 - Animates new links and presents a before/after Bridge Score.
+- Explains why the score changed, including new connections and network gaps bridged.
 - Recommends three Oregon / Pacific Northwest native plants based on space and sunlight.
+- Shares a concise personal result through the native share sheet or clipboard.
 - Provides a text equivalent for every important map insight.
 
 ## How we built it
@@ -31,7 +33,7 @@ The technical flow is:
 
 **OpenStreetMap-compatible green-space data → approximate habitat nodes → Haversine distances → connectivity graph → intervention simulation → before/after visualization**
 
-The graph module creates an edge whenever two habitat centroids fall within a configurable distance threshold. It finds connected components, isolated nodes, edge density, and average nearest-neighbor distance, then normalizes those signals into the 0–100 Bridge Score. Adding a user space runs the exact same calculation again; the improvement is computed, not hard-coded. Each landscape supplies the same small scenario contract—nodes, intervention, threshold, coordinates, and map labels—so adding another terrain does not require changing the UI or algorithm.
+The graph module creates an edge whenever two habitat centroids fall within a configurable distance threshold. It finds connected components, isolated nodes, edge density, and average nearest-neighbor distance, then normalizes those signals into the 0–100 baseline score. A personal intervention is evaluated separately: new edges and previously disconnected groups joined determine the potential score gain, while an isolated space correctly produces no claimed improvement. Space size adds a deliberately modest 0–100 meter reach adjustment to the intervention only; it never changes the existing habitat graph.
 
 Live searches use an attributed Leaflet map, while the same graph and scoring modules produce the accessible text summary.
 
@@ -45,7 +47,9 @@ The hardest problem was translating habitat connectivity into something understa
 
 - Real geospatial distance processing with the Haversine formula.
 - Dynamic graph construction and recalculation after an intervention.
+- User-controlled intervention placement on the live map.
 - A habitat-gap heuristic based on unconnected nearby patch pairs.
+- Honest positive, partial, and no-connection outcomes.
 - A high-impact animated before/after map state.
 - Deterministic native-plant matching for small urban spaces.
 - Keyboard-accessible forms, visible focus states, reduced-motion support, semantic labels, and a complete text connectivity summary.
