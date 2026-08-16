@@ -21,7 +21,13 @@ const sizeOptions = [
   { value: "medium", label: "Medium · 25–100 sq ft", area: .08, reachKm: .05 },
   { value: "large", label: "Large · over 100 sq ft", area: .2, reachKm: .1 },
 ] as const;
+const plantingOptions = [
+  { value: "few", label: "A few", detail: "1–3", reachKm: 0 },
+  { value: "several", label: "Several", detail: "4–9", reachKm: .025 },
+  { value: "many", label: "Many", detail: "10+", reachKm: .05 },
+] as const;
 type SizeValue = typeof sizeOptions[number]["value"];
+type PlantingValue = typeof plantingOptions[number]["value"];
 type LocationMatch = { name: string; lat: number; lon: number };
 
 export function WildBridgeApp() {
@@ -33,14 +39,17 @@ export function WildBridgeApp() {
   const [space, setSpace] = useState<SpaceType>("Balcony");
   const [sunlight, setSunlight] = useState<Sunlight>("Full sun");
   const [size, setSize] = useState<SizeValue>("small");
+  const [planting, setPlanting] = useState<PlantingValue>("several");
   const [configuring, setConfiguring] = useState(false);
   const [simulated, setSimulated] = useState(false);
   const [showAfter, setShowAfter] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
   const selectedSize = sizeOptions.find((option) => option.value === size)!;
+  const selectedPlanting = plantingOptions.find((option) => option.value === planting)!;
+  const interventionReachKm = selectedSize.reachKm + selectedPlanting.reachKm;
   const userSpace = useMemo(() => scenario ? { ...scenario.userSpace, area: selectedSize.area } : null, [scenario, selectedSize.area]);
   const activeScenario = useMemo(() => scenario && userSpace ? { ...scenario, userSpace } : scenario, [scenario, userSpace]);
-  const impact = useMemo(() => scenario && userSpace ? analyzeIntervention(scenario.habitats, userSpace, scenario.thresholdKm, selectedSize.reachKm) : null, [scenario, userSpace, selectedSize.reachKm]);
+  const impact = useMemo(() => scenario && userSpace ? analyzeIntervention(scenario.habitats, userSpace, scenario.thresholdKm, interventionReachKm) : null, [scenario, userSpace, interventionReachKm]);
   const gap = useMemo(() => scenario ? findHabitatGap(scenario.habitats, scenario.thresholdKm) : null, [scenario]);
   const beforeScore = impact?.before.score ?? 0;
   const afterScore = impact?.after.score ?? 0;
@@ -110,7 +119,7 @@ export function WildBridgeApp() {
   };
   const shareResult = async () => {
     if (!scenario || !impact) return;
-    const text = `WildBridge analysis for ${scenario.name}: ${beforeScore} → ${afterScore} connectivity score, ${newConnections} new habitat connection${newConnections === 1 ? "" : "s"}.`;
+    const text = `WildBridge analysis for ${scenario.name}: ${beforeScore} → ${afterScore} connectivity score, ${newConnections} habitat network${newConnections === 1 ? "" : "s"} reached, planting level ${selectedPlanting.label.toLowerCase()}.`;
     try {
       if (navigator.share) await navigator.share({ title: "My WildBridge impact", text, url: window.location.href });
       else { await navigator.clipboard.writeText(text); setShareStatus("Result copied"); }
@@ -136,9 +145,9 @@ export function WildBridgeApp() {
             <div className="location-options"><button type="button" onClick={useMyLocation} disabled={locationState === "loading"}><LocateFixed /> Use my location</button></div>
             <p className={locationState === "error" ? "search-error" : ""} aria-live="polite"><MapPin size={14} /> {locationMessage}</p>
           </div>
-          <LeafletHabitatMap key={scenario?.id ?? "empty"} scenario={activeScenario} showAfter={showAfter} previewUserSpace={configuring} reachKm={selectedSize.reachKm} onSelectLocation={selectUserLocation} />
+          <LeafletHabitatMap key={scenario?.id ?? "empty"} scenario={activeScenario} showAfter={showAfter} previewUserSpace={configuring} reachKm={interventionReachKm} onSelectLocation={selectUserLocation} />
           {configuring && <div className="map-placement-hint"><MapPin /> Click the map to place your space</div>}
-          {scenario && <div className="map-legend" aria-label="Map legend"><span><i className="legend-habitat" /> Habitat patch</span><span><i className="legend-link" /> Connection</span>{(configuring || simulated) && <span><i className="legend-space" /> Your space</span>}</div>}
+          {scenario && <div className="map-legend" aria-label="Map legend"><span><i className="legend-habitat" /> Habitat patch</span><span><i className="legend-link" /> Connection</span>{!showAfter && <span><i className="legend-gap" /> Potential gap</span>}{(configuring || simulated) && <span><i className="legend-space" /> Your space</span>}</div>}
           {simulated && <div className="view-toggle" aria-label="Map view"><button className={!showAfter ? "active" : ""} onClick={() => setShowAfter(false)}>Before</button><button className={showAfter ? "active" : ""} onClick={() => setShowAfter(true)}>After <Sparkles size={14} /></button></div>}
         </div>
 
@@ -151,9 +160,9 @@ export function WildBridgeApp() {
 
           {scenario && !configuring && !simulated && <div className="panel-content explore-panel">
             <Link className="back-link" href="/"><ArrowLeft size={16} /> Back to story</Link>
-            <p className="panel-eyebrow">{scenario.terrain} analysis</p><h2>A potential bridge is waiting.</h2><p>We found a weakly connected area near {scenario.name}.</p>
+            <p className="panel-eyebrow">{scenario.terrain} analysis</p><h2>{gap ? "A potential bridge is waiting." : "This area is already well connected."}</h2><p>{gap ? `We found a weakly connected area near ${scenario.name}.` : `No clear connectivity gap was found near ${scenario.name}.`}</p>
             <div className="analysis-stat"><div><span>Local connectivity score</span><b>{beforeScore}</b><small>/100</small></div><i style={{ "--score": `${beforeScore}%` } as React.CSSProperties} /></div>
-            <div className="finding"><span>!</span><div><b>Connectivity gap detected</b><p>{gap ? `${gap.between[0]} and ${gap.between[1]} sit close, but outside the current connection range.` : "Two habitat groups sit just beyond the current connection range."}</p></div></div>
+            <div className="finding"><span>{gap ? "!" : "✓"}</span><div><b>{gap ? "Connectivity gap detected" : "No gap detected"}</b><p>{gap ? `${gap.between[0]} and ${gap.between[1]} sit close, but outside the current connection range.` : "The mapped green spaces already form one local network at the current range."}</p></div></div>
             <details className="score-method"><summary>How is this score calculated?</summary><p>We turn mapped green spaces into a graph, connect nearby patches, then combine connected groups, isolated patches, and edge density into a 0–100 relative score.</p></details>
             <button className="button button-primary button-wide" onClick={() => { setConfiguring(true); setShowAfter(false); }}>Add my real space <ArrowRight size={18} /></button>
             <p className="metric-note">Bridge Score is a prototype relative metric based on distances between nearby green-space patches. It is not a formal ecological assessment.</p>
@@ -165,8 +174,9 @@ export function WildBridgeApp() {
             <div className="selected-location"><MapPin /><div><b>Selected coordinates</b><span>{scenario.userSpace.lat.toFixed(5)}, {scenario.userSpace.lon.toFixed(5)}</span></div><button type="button" onClick={() => selectUserLocation(scenario.center.lat, scenario.center.lon)}>Reset</button></div>
             <fieldset><legend>What kind of space?</legend><div className="space-options">{spaces.map((item) => <button type="button" className={space === item.name ? "selected" : ""} aria-pressed={space === item.name} key={item.name} onClick={() => setSpace(item.name)}><span>{item.icon}</span>{item.name}{space === item.name && <Check size={14} />}</button>)}</div></fieldset>
             <label className="field-label" htmlFor="size">Approximate size</label><select id="size" value={size} onChange={(event) => setSize(event.target.value as SizeValue)}>{sizeOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select>
+            <fieldset><legend>How many plants?</legend><div className="segmented">{plantingOptions.map((option) => <button type="button" className={planting === option.value ? "selected" : ""} aria-pressed={planting === option.value} onClick={() => setPlanting(option.value)} key={option.value}>{option.label}<small>{option.detail}</small></button>)}</div></fieldset>
             <fieldset><legend>Sunlight</legend><div className="segmented">{(["Full sun", "Partial", "Shade"] as Sunlight[]).map((sun) => <button type="button" className={sunlight === sun ? "selected" : ""} aria-pressed={sunlight === sun} onClick={() => setSunlight(sun)} key={sun}>{sun}</button>)}</div></fieldset>
-            <div className="live-impact-preview"><span>Projected score</span><b>{beforeScore} <i>→</i> {afterScore}</b><small>Updates with location and size</small></div>
+            <div className="live-impact-preview"><span>Projected score</span><b>{beforeScore} <i>→</i> {afterScore}</b><small>Updates with location, size, and planting level</small></div>
             <button className="button button-primary button-wide" onClick={simulate}>Calculate my impact <Sparkles size={17} /></button>
           </div>}
 
@@ -174,8 +184,8 @@ export function WildBridgeApp() {
             <div className="impact-top"><span>{newConnections ? <Check /> : <MapPin />}</span><button className="impact-share" onClick={shareResult} aria-label="Share this result"><Share2 size={17} /></button></div>
             <p className="panel-eyebrow">Personal impact calculated</p><h2>{outcome.title}</h2><p>{outcome.copy}</p>
             <div className="score-change"><div><small>Current</small><b>{beforeScore}</b></div><ArrowRight /><div className="after-score"><small>With your space</small><b>{afterScore}</b></div><span>{scoreGain ? `+${scoreGain}` : "No change"}</span></div>
-            <div className="impact-stats"><div><b>+{newConnections}</b><span>new habitat<br />connections</span></div><div><b>{bridgedComponents}</b><span>network gaps<br />bridged</span></div></div>
-            <div className="summary" aria-label="Connectivity summary"><b>Why the score changed</b><p>{newConnections ? `At this location, your ${selectedSize.label.split(" ·")[0].toLowerCase()} ${space.toLowerCase()} reaches ${newConnections} mapped habitat patch${newConnections === 1 ? "" : "es"}${bridgedComponents ? ` and bridges ${bridgedComponents} network gap${bridgedComponents === 1 ? "" : "s"}` : ""}.` : "No mapped habitat patch falls within the current connection range. Move the selected point on the map and calculate again."}</p></div>
+            <div className="impact-stats"><div><b>{newConnections}</b><span>habitat networks<br />reached</span></div><div><b>{bridgedComponents}</b><span>network gaps<br />bridged</span></div></div>
+            <div className="summary" aria-label="Connectivity summary"><b>Why the score changed</b><p>{newConnections ? `At this location, your ${selectedSize.label.split(" ·")[0].toLowerCase()} ${space.toLowerCase()} with ${selectedPlanting.label.toLowerCase()} plants reaches ${newConnections} habitat network${newConnections === 1 ? "" : "s"}${bridgedComponents ? ` and bridges ${bridgedComponents} network gap${bridgedComponents === 1 ? "" : "s"}` : ". Existing patches in the same network count once"}.` : "No mapped habitat network falls within the current modeled reach. Try a different location, space size, or planting level."}</p></div>
             <div className="result-actions"><button className="reset-button" onClick={() => { setSimulated(false); setShowAfter(false); setConfiguring(true); }}><RotateCcw size={15} /> Adjust my space</button><button className="reset-button" onClick={startOver}><Search size={15} /> New location</button></div>
             <p className="share-status" aria-live="polite">{shareStatus}</p>
           </div>}
@@ -183,9 +193,9 @@ export function WildBridgeApp() {
       </div>
 
       {scenario && simulated && <section className="recommendations" aria-labelledby="plant-title">
-        <div className="recommendation-heading"><div><p className="panel-eyebrow">{newConnections ? "Plant your bridge" : "Strengthen your space"}</p><h2 id="plant-title">Pacific Northwest plants for your {space.toLowerCase()}</h2></div><p>Selected for <b>{sunlight.toLowerCase()}</b> and a <b>{selectedSize.label.split(" ·")[0].toLowerCase()}</b> space.</p></div>
+        <div className="recommendation-heading"><div><p className="panel-eyebrow">{newConnections ? "Plant your bridge" : "Strengthen your space"}</p><h2 id="plant-title">Pacific Northwest plants for your {space.toLowerCase()}</h2></div><p>Planting level: <b>{selectedPlanting.label.toLowerCase()}</b> · selected for <b>{sunlight.toLowerCase()}</b> and a <b>{selectedSize.label.split(" ·")[0].toLowerCase()}</b> space.</p></div>
         <PlantCards plants={recommendations} />
-        <div className="science-note"><span>i</span><p><b>About the model</b><br />WildBridge uses a distance-based connectivity proxy for exploration—not a formal ecological assessment. Space size changes modeled reach by at most 100 meters; plant suggestions are Pacific Northwest examples and should be locally verified.</p></div>
+        <div className="science-note"><span>i</span><p><b>About the model</b><br />WildBridge uses a distance-based connectivity proxy for exploration—not a formal ecological assessment. Space size and planting level change modeled reach by at most 150 meters; plant suggestions are Pacific Northwest examples and should be locally verified.</p></div>
       </section>}
     </section>
     <footer><div className="shell"><div><Link className="brand" href="/"><span className="brand-mark"><i /><i /><i /></span>WildBridge</Link><p>Small spaces. Stronger connections.</p></div><p>Built for OregonHacks 2026 · Open data, responsible framing.</p></div></footer>

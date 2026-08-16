@@ -7,9 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node --import tsx --test tests/*.test.ts"
+    "test": "node --import tsx --test tests/*.test.ts",
+    "video:studio": "remotion studio remotion/index.ts",
+    "video:render": "remotion render remotion/index.ts WildBridgeExplainer public/video/wildbridge-explainer.mp4 --codec=h264 --browser-executable=/usr/bin/google-chrome"
   },
   "dependencies": {
+    "@remotion/cli": "4.0.512",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
@@ -20,6 +23,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-leaflet": "^5.0.0",
+    "remotion": "4.0.512",
     "typescript": "^5.7.0"
   },
   "devDependencies": {

@@ -50,7 +50,8 @@ export function analyzeConnectivity(nodes: HabitatNode[], thresholdKm = CONNECTI
 
   const isolated = nodes.filter((node) => neighbors.get(node.id)?.size === 0).map((node) => node.id);
   const connectedRatio = nodes.length > 1 ? (nodes.length - components.length) / (nodes.length - 1) : 0;
-  const edgeDensity = Math.min(1, edges.length / Math.max(nodes.length, 1));
+  const possibleEdges = nodes.length * (nodes.length - 1) / 2;
+  const edgeDensity = possibleEdges ? edges.length / possibleEdges : 0;
   const isolationPenalty = isolated.length / Math.max(nodes.length, 1);
   const score = Math.round(Math.max(0, Math.min(100, 8 + connectedRatio * 48 + edgeDensity * 26 - isolationPenalty * 50)));
 
@@ -75,19 +76,31 @@ export function analyzeIntervention(nodes: HabitatNode[], userSpace: HabitatNode
   return {
     before,
     after: newEdges.length ? after : { ...after, score: before.score },
-    newConnections: newEdges.length,
+    newConnections: joinedComponents.size,
     bridgedComponents,
   };
 }
 
-export function findHabitatGap(nodes: HabitatNode[], thresholdKm = CONNECTION_THRESHOLD_KM) {
+export function findHabitatGaps(nodes: HabitatNode[], thresholdKm = CONNECTION_THRESHOLD_KM, limit = 5) {
   const components = analyzeConnectivity(nodes, thresholdKm).components;
   const componentByNode = new Map(components.flatMap((component, index) => component.map((id) => [id, index] as const)));
-  let best: { a: HabitatNode; b: HabitatNode; distanceKm: number } | undefined;
+  const bestByComponentPair = new Map<string, { a: HabitatNode; b: HabitatNode; distanceKm: number }>();
   nodes.forEach((a, index) => nodes.slice(index + 1).forEach((b) => {
     const distanceKm = haversine(a, b);
-    if (componentByNode.get(a.id) !== componentByNode.get(b.id) && distanceKm > thresholdKm && distanceKm < thresholdKm * 2 && (!best || distanceKm < best.distanceKm)) best = { a, b, distanceKm };
+    const aComponent = componentByNode.get(a.id), bComponent = componentByNode.get(b.id);
+    if (aComponent === bComponent || distanceKm <= thresholdKm || distanceKm >= thresholdKm * 2) return;
+    const key = [aComponent, bComponent].sort((left, right) => left! - right!).join("-");
+    const current = bestByComponentPair.get(key);
+    if (!current || distanceKm < current.distanceKm) bestByComponentPair.set(key, { a, b, distanceKm });
   }));
-  if (!best) return null;
-  return { lat: (best.a.lat + best.b.lat) / 2, lon: (best.a.lon + best.b.lon) / 2, between: [best.a.name, best.b.name] as [string, string] };
+  return [...bestByComponentPair.values()].sort((a, b) => a.distanceKm - b.distanceKm).slice(0, limit).map((gap) => ({
+    lat: (gap.a.lat + gap.b.lat) / 2,
+    lon: (gap.a.lon + gap.b.lon) / 2,
+    distanceKm: gap.distanceKm,
+    between: [gap.a.name, gap.b.name] as [string, string],
+  }));
+}
+
+export function findHabitatGap(nodes: HabitatNode[], thresholdKm = CONNECTION_THRESHOLD_KM) {
+  return findHabitatGaps(nodes, thresholdKm, 1)[0] ?? null;
 }

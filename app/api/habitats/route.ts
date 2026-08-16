@@ -18,10 +18,10 @@ export async function GET(request: NextRequest) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return NextResponse.json({ error: "Invalid coordinates." }, { status: 400 });
 
   const query = `[out:json][timeout:18];(
-    nwr(around:1800,${lat},${lon})[leisure~"^(park|garden|nature_reserve)$"];
-    nwr(around:1800,${lat},${lon})[natural~"^(wood|grassland|scrub|heath)$"];
-    nwr(around:1800,${lat},${lon})[landuse~"^(forest|meadow|recreation_ground|village_green)$"];
-    nwr(around:1800,${lat},${lon})[boundary="protected_area"];
+    nwr(around:1800,${lat},${lon})[leisure~"^(park|garden|nature_reserve)$"][name];
+    nwr(around:1800,${lat},${lon})[natural~"^(wood|grassland|scrub|heath)$"][name];
+    nwr(around:1800,${lat},${lon})[landuse~"^(forest|meadow|recreation_ground|village_green)$"][name];
+    nwr(around:1800,${lat},${lon})[boundary="protected_area"][name];
   );out center qt 80;`;
 
   let receivedData = false;
@@ -41,10 +41,11 @@ export async function GET(request: NextRequest) {
         const point = element.center ?? (element.lat != null && element.lon != null ? { lat: element.lat, lon: element.lon } : null);
         if (!point) return [];
         const tags = element.tags ?? {};
+        if (!tags.name) return [];
         const kind = tags.leisure === "garden" ? "garden" : tags.natural === "wood" || tags.landuse === "forest" ? "wood" : "park";
-        return [{ id: `osm-${element.type}-${element.id}`, name: tags.name || `Unnamed ${kind}`, ...point, area: kind === "wood" ? 4 : kind === "garden" ? 1 : 2, kind }];
-      }).filter((node, index, nodes) => nodes.findIndex((item) => Math.abs(item.lat - node.lat) < .00008 && Math.abs(item.lon - node.lon) < .00008) === index)
-        .sort((a, b) => Number(a.name.startsWith("Unnamed")) - Number(b.name.startsWith("Unnamed"))).slice(0, 18);
+        return [{ id: `osm-${element.type}-${element.id}`, name: tags.name, ...point, area: kind === "wood" ? 4 : kind === "garden" ? 1 : 2, kind }];
+      }).filter((node, index, nodes) => nodes.findIndex((item) => item.name === node.name || Math.abs(item.lat - node.lat) < .00008 && Math.abs(item.lon - node.lon) < .00008) === index)
+        .sort((a, b) => (a.lat - lat) ** 2 + (a.lon - lon) ** 2 - (b.lat - lat) ** 2 - (b.lon - lon) ** 2).slice(0, 18);
       if (habitats.length >= 3) return NextResponse.json({ habitats });
     } catch {
       // Try the second public Overpass instance before the client uses its local estimate.

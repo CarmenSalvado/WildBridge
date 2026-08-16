@@ -7,11 +7,10 @@ import type { HabitatScenario } from "@/lib/types";
 
 function FitScenario({ scenario }: { scenario: HabitatScenario }) {
   const map = useMap();
-  const { habitats, userSpace } = scenario;
-  const userLat = userSpace.lat, userLon = userSpace.lon;
+  const { habitats, center } = scenario;
   useEffect(() => {
-    map.fitBounds([...habitats.map((node) => [node.lat, node.lon] as [number, number]), [userLat, userLon]], { padding: [55, 55], maxZoom: 15 });
-  }, [map, habitats, userLat, userLon]);
+    map.fitBounds([...habitats.map((node) => [node.lat, node.lon] as [number, number]), [center.lat, center.lon]], { padding: [55, 55], maxZoom: 15 });
+  }, [map, habitats, center.lat, center.lon]);
   return null;
 }
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { analyzeConnectivity, analyzeIntervention, haversine } from "../lib/connectivity";
+import { analyzeConnectivity, analyzeIntervention, findHabitatGaps, haversine } from "../lib/connectivity";
 import { demoSpace, PORTLAND_CENTER, portlandHabitats } from "../data/portland";
 import { createLiveScenario } from "../lib/live-scenario";
 
@@ -12,7 +12,7 @@ test("adding the demo habitat improves the real graph score", () => {
   assert.ok(after.edges.length > before.edges.length);
   assert.deepEqual(
     { before: before.score, after: after.score, newConnections: after.edges.length - before.edges.length },
-    { before: 42, after: 67, newConnections: 2 },
+    { before: 29, after: 50, newConnections: 2 },
   );
 });
 
@@ -20,6 +20,7 @@ test("live OSM nodes produce a useful bridge scenario", () => {
   const scenario = createLiveScenario("Test location", PORTLAND_CENTER, portlandHabitats);
   assert.match(scenario.id, /^live-/);
   assert.deepEqual({ lat: scenario.userSpace.lat, lon: scenario.userSpace.lon }, PORTLAND_CENTER);
+  assert.equal(scenario.thresholdKm, .65);
 });
 
 test("a real intervention scores connections without changing existing habitat edges", () => {
@@ -51,4 +52,25 @@ test("space reach changes only the intervention connections", () => {
   assert.equal(large.newConnections, 2);
   assert.equal(large.bridgedComponents, 1);
   assert.equal(large.before.edges.length, small.before.edges.length);
+});
+
+test("counts one reached network instead of every patch in it", () => {
+  const habitats = [
+    { id: "a", name: "A", lat: 0, lon: 0, area: 1, kind: "park" as const },
+    { id: "b", name: "B", lat: 0, lon: .001, area: 1, kind: "park" as const },
+    { id: "c", name: "C", lat: 0, lon: .002, area: 1, kind: "park" as const },
+  ];
+  const result = analyzeIntervention(habitats, { id: "space", name: "Your space", lat: 0, lon: .001, area: .1, kind: "user" }, .55);
+  assert.equal(result.newConnections, 1);
+  assert.equal(result.bridgedComponents, 0);
+});
+
+test("finds multiple distinct gaps between disconnected habitat groups", () => {
+  const habitats = [
+    { id: "west", name: "West", lat: 0, lon: 0, area: 1, kind: "park" as const },
+    { id: "center", name: "Center", lat: 0, lon: .006, area: 1, kind: "garden" as const },
+    { id: "east", name: "East", lat: 0, lon: .012, area: 1, kind: "park" as const },
+  ];
+  const gaps = findHabitatGaps(habitats, .55);
+  assert.deepEqual(gaps.map((gap) => gap.between), [["West", "Center"], ["Center", "East"]]);
 });

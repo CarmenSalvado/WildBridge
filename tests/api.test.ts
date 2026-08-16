@@ -30,6 +30,8 @@ test("habitat lookup sends a bounded GET query and normalizes OSM features", asy
       { id: 1, type: "way", center: { lat: 45.52, lon: -122.67 }, tags: { name: "River Park", leisure: "park" } },
       { id: 2, type: "node", lat: 45.521, lon: -122.671, tags: { name: "Community Garden", leisure: "garden" } },
       { id: 3, type: "relation", center: { lat: 45.522, lon: -122.672 }, tags: { name: "Urban Wood", natural: "wood" } },
+      ...Array.from({ length: 20 }, (_, index) => ({ id: index + 4, type: "way", center: { lat: 45.523 + index * .001, lon: -122.673 }, tags: { name: `Extra Park ${index}`, leisure: "park" } })),
+      { id: 24, type: "way", center: { lat: 45.52, lon: -122.67 }, tags: { leisure: "garden" } },
     ] });
   };
   try {
@@ -37,9 +39,11 @@ test("habitat lookup sends a bounded GET query and normalizes OSM features", asy
     const body = await response.json();
     const query = new URL(requestedUrl).searchParams.get("data") ?? "";
     assert.equal(response.status, 200);
-    assert.equal(body.habitats.length, 3);
-    assert.deepEqual(body.habitats.map((node: { kind: string }) => node.kind), ["park", "garden", "wood"]);
+    assert.equal(body.habitats.length, 18);
+    assert.deepEqual(body.habitats.slice(0, 3).map((node: { kind: string }) => node.kind), ["park", "garden", "wood"]);
+    assert.ok(body.habitats.every((node: { name: string }) => !node.name.startsWith("Unnamed")));
     assert.match(query, /around:1800,45\.52,-122\.67/);
+    assert.match(query, /\[name\]/);
     assert.match(query, /out center qt 80/);
   } finally {
     globalThis.fetch = originalFetch;

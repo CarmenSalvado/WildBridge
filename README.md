@@ -85,3 +85,12 @@ npm test
 npm run lint
 npm run build
 ```
+
+## Explainer video
+
+The Remotion composition contains only explanatory motion graphics; the app recording is intentionally not included.
+
+```bash
+npm run video:studio
+npm run video:render
+```
