@@ -13,7 +13,14 @@ function FitScenario({ scenario }: { scenario: HabitatScenario }) {
   return null;
 }
 
-export function LeafletHabitatMap({ scenario, showAfter }: { scenario: HabitatScenario; showAfter: boolean }) {
+export function LeafletHabitatMap({ scenario, showAfter }: { scenario: HabitatScenario | null; showAfter: boolean }) {
+  if (!scenario) return <div className="map leaflet-map-wrap">
+    <MapContainer className="leaflet-map" center={[25, 0]} zoom={2} minZoom={2} scrollWheelZoom={false} zoomControl={false} aria-label="OpenStreetMap world map. Search for a location to begin.">
+      <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} />
+    </MapContainer>
+    <div className="live-map-badge map-ready-badge"><span /> SEARCH A REAL PLACE TO BEGIN</div>
+  </div>;
+
   const nodes = showAfter ? [...scenario.habitats, scenario.userSpace] : scenario.habitats;
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const before = analyzeConnectivity(scenario.habitats, scenario.thresholdKm);

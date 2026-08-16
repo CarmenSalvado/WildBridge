@@ -10,7 +10,7 @@ type OverpassElement = {
   tags?: Record<string, string>;
 };
 
-const endpoints = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+const endpoints = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
 
 export async function GET(request: NextRequest) {
   const lat = Number(request.nextUrl.searchParams.get("lat"));
@@ -22,19 +22,21 @@ export async function GET(request: NextRequest) {
     nwr(around:1800,${lat},${lon})[natural~"^(wood|grassland|scrub|heath)$"];
     nwr(around:1800,${lat},${lon})[landuse~"^(forest|meadow|recreation_ground|village_green)$"];
     nwr(around:1800,${lat},${lon})[boundary="protected_area"];
-  );out center 80;`;
+  );out center qt 80;`;
 
+  let receivedData = false;
   for (const endpoint of endpoints) {
     try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "WildBridge/1.0 (OregonHacks 2026; github.com/CarmenSalvado/WildBridge)" },
-        body: new URLSearchParams({ data: query }),
+      const url = new URL(endpoint);
+      url.searchParams.set("data", query);
+      const response = await fetch(url, {
+        headers: { "User-Agent": "WildBridge/1.0 (OregonHacks 2026; github.com/CarmenSalvado/WildBridge)" },
         signal: AbortSignal.timeout(15000),
         next: { revalidate: 600 },
       });
       if (!response.ok) continue;
       const elements = (await response.json() as { elements: OverpassElement[] }).elements;
+      receivedData = true;
       const habitats = elements.flatMap((element): HabitatNode[] => {
         const point = element.center ?? (element.lat != null && element.lon != null ? { lat: element.lat, lon: element.lon } : null);
         if (!point) return [];
@@ -45,8 +47,11 @@ export async function GET(request: NextRequest) {
         .sort((a, b) => Number(a.name.startsWith("Unnamed")) - Number(b.name.startsWith("Unnamed"))).slice(0, 18);
       if (habitats.length >= 3) return NextResponse.json({ habitats });
     } catch {
-      // Try the second public Overpass instance before returning the reliable demo fallback.
+      // Try the second public Overpass instance before the client uses its local estimate.
     }
   }
-  return NextResponse.json({ error: "No nearby mapped green spaces were available." }, { status: 503 });
+  return NextResponse.json(
+    { error: receivedData ? "Fewer than three nearby mapped green spaces were found." : "Live habitat data is temporarily unavailable." },
+    { status: receivedData ? 404 : 503 },
+  );
 }

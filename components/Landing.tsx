@@ -54,7 +54,7 @@ export function Landing() {
             </Link>
             <a className="button button-quiet" href="#how">See how it works <ArrowDown size={17} /></a>
           </div>
-          <p className="hero-note"><span>●</span> Live OpenStreetMap search · Reliable demos included</p>
+          <p className="hero-note"><span>●</span> Live OpenStreetMap search · Real mapped habitats</p>
         </div>
         <div className="hero-visual" aria-hidden="false">
           <div className="hero-visual-label"><span>Habitat connectivity</span><b>Potential bridge found</b></div>

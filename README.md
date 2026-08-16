@@ -4,7 +4,7 @@
 
 WildBridge is a map-driven urban habitat tool built for OregonHacks 2026. It reveals gaps between nearby green spaces and shows how a balcony, yard, patio, school garden, or window box could become a small stepping stone for nature.
 
-The complete judge demo takes under a minute: enter the habitat explorer, choose one of three Oregon landscapes, inspect a highlighted habitat gap, add a space, choose its conditions, and watch the connectivity graph recalculate in a clear before/after view.
+The complete flow takes under a minute: search a real location, inspect a highlighted habitat gap, add a space, choose its conditions, and watch the connectivity graph recalculate in a clear before/after view.
 
 ## Inspiration
 
@@ -12,7 +12,6 @@ Urban nature is often fragmented into isolated patches. Parks, gardens, and tree
 
 ## What it does
 
-- Maps reliable curated green-space scenarios for Portland, Eugene, and Bend.
 - Searches real locations worldwide through OpenStreetMap Nominatim or browser geolocation.
 - Retrieves nearby parks, gardens, woods, meadows, and protected areas through Overpass API.
 - Renders live OpenStreetMap tiles and graph overlays with Leaflet.
@@ -26,7 +25,7 @@ Urban nature is often fragmented into isolated patches. Parks, gardens, and tree
 
 ## How we built it
 
-WildBridge uses Next.js, React, TypeScript, Leaflet, React Leaflet, and CSS. A server-side Nominatim route resolves explicit location searches, a bounded Overpass query retrieves nearby green spaces, and Leaflet renders OpenStreetMap tiles with graph edges and intervention nodes. The bundled Oregon demos remain the no-network fallback, so a slow public service can never break the core presentation.
+WildBridge uses Next.js, React, TypeScript, Leaflet, React Leaflet, and CSS. A server-side Nominatim route resolves explicit location searches, a bounded Overpass query retrieves nearby green spaces, and Leaflet renders OpenStreetMap tiles with graph edges and intervention nodes. No sample landscape is shown as real data: analysis starts only after live habitat data is available.
 
 The technical flow is:
 
@@ -34,7 +33,7 @@ The technical flow is:
 
 The graph module creates an edge whenever two habitat centroids fall within a configurable distance threshold. It finds connected components, isolated nodes, edge density, and average nearest-neighbor distance, then normalizes those signals into the 0–100 Bridge Score. Adding a user space runs the exact same calculation again; the improvement is computed, not hard-coded. Each landscape supplies the same small scenario contract—nodes, intervention, threshold, coordinates, and map labels—so adding another terrain does not require changing the UI or algorithm.
 
-Live searches use an attributed Leaflet map. Curated demos retain the self-contained accessible SVG, keeping the judge path deterministic while both map types use the same graph and scoring modules.
+Live searches use an attributed Leaflet map, while the same graph and scoring modules produce the accessible text summary.
 
 The public geocoder is called only after an explicit form submission, identifies WildBridge with a dedicated User-Agent, and is cached by Next.js. OpenStreetMap attribution is always visible on live maps. Plant recommendations remain Pacific Northwest examples and must be locally verified when exploring other regions.
 
@@ -50,7 +49,7 @@ The hardest problem was translating habitat connectivity into something understa
 - A high-impact animated before/after map state.
 - Deterministic native-plant matching for small urban spaces.
 - Keyboard-accessible forms, visible focus states, reduced-motion support, semantic labels, and a complete text connectivity summary.
-- A zero-account Portland demo that remains useful without external services.
+- A clear empty state that never presents sample geometry as live habitat data.
 
 ## What we learned
 
@@ -58,7 +57,7 @@ Urban habitat connectivity is a complex, species- and context-dependent topic. P
 
 ## What's next
 
-- Live OpenStreetMap / Overpass ingestion with the Portland dataset retained as automatic fallback.
+- A dedicated hosted habitat-data provider for higher live-search availability at scale.
 - Species-specific distance thresholds and movement models.
 - Richer municipal GIS layers and verified native-plant databases.
 - Partnerships with municipalities, schools, and community groups.
