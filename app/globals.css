@@ -47,8 +47,28 @@ h1 em, h2 em { font-family: var(--serif); font-weight: 500; color: var(--moss); 
 .button:hover { transform: translateY(-2px); }
 .button-primary { background: var(--moss); color: white; box-shadow: 0 8px 24px rgba(49,91,71,.17); }
 .button-primary:hover { background: #244b39; box-shadow: 0 12px 28px rgba(49,91,71,.25); }
+.button-find { position: relative; isolation: isolate; }
+.button-find::before { content: ""; position: absolute; z-index: 0; inset: 0; border-radius: inherit; background: inherit; }
+.button-find > span, .button-find > svg:not(.button-vines) { position: relative; z-index: 1; }
+.button-vines { position: absolute; z-index: -1; left: 50%; top: 50%; width: 320px; max-width: none; height: 180px; overflow: visible; pointer-events: none; transform: translate(-50%, -50%); }
+.vine-stems { fill: none; stroke: #527741; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 2px 2px rgba(32, 66, 38, .18)); }
+.vine-stems path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 900ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); }
+.vine-leaves { fill: #7fa94d; stroke: #436c37; stroke-width: 1.2; filter: drop-shadow(0 2px 2px rgba(32, 66, 38, .2)); }
+.vine-leaves path { opacity: 0; transform: scale(.72); transform-box: fill-box; transform-origin: center; transition: opacity 240ms ease, transform 240ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); }
+.vine-stems path:nth-child(2), .vine-stems path:nth-child(6) { transition-delay: 70ms; }
+.vine-stems path:nth-child(3), .vine-stems path:nth-child(7) { transition-delay: 130ms; }
+.vine-stems path:nth-child(4), .vine-stems path:nth-child(8) { transition-delay: 190ms; }
+.vine-leaves path:nth-child(1), .vine-leaves path:nth-child(5) { transition-delay: 610ms; }
+.vine-leaves path:nth-child(2), .vine-leaves path:nth-child(6) { transition-delay: 680ms; }
+.vine-leaves path:nth-child(3), .vine-leaves path:nth-child(7) { transition-delay: 750ms; }
+.vine-leaves path:nth-child(4), .vine-leaves path:nth-child(8) { transition-delay: 820ms; }
 .button-quiet { border: 1px solid var(--line); background: rgba(255,255,255,.3); }
 .button-wide { width: 100%; border-radius: 12px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .button-find:hover .vine-stems path { stroke-dashoffset: 0; }
+  .button-find:hover .vine-leaves path { opacity: 1; transform: scale(1); }
+}
 .hero-note { margin: 23px 3px 0; font-size: 11px; color: #78817c; }
 .hero-note span { color: var(--moss-bright); margin-right: 6px; }
 

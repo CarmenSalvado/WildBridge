@@ -27,7 +27,31 @@ export function Landing() {
           <h1>Your smallest green space can connect <em>something bigger.</em></h1>
           <p className="hero-lede">WildBridge reveals gaps between urban habitats and shows how your balcony, yard, or window box could become a stepping stone for nature.</p>
           <div className="hero-actions">
-            <Link className="button button-primary" href="/explore">Find my bridge <ArrowRight size={18} /></Link>
+            <Link className="button button-primary button-find" href="/explore">
+              <svg className="button-vines" viewBox="0 0 320 180" aria-hidden="true">
+                <g className="vine-stems">
+                  <path pathLength="1" d="M106 74C86 60 91 34 62 28C36 23 25 6 43 8C60 10 63 27 51 32" />
+                  <path pathLength="1" d="M156 68C153 47 139 38 148 18C156 1 179 5 174 21C170 34 157 31 158 23" />
+                  <path pathLength="1" d="M215 75C238 64 240 40 265 31C288 23 303 41 290 55C281 65 269 59 274 48" />
+                  <path pathLength="1" d="M231 89C256 83 271 98 295 87C313 79 316 62 304 63C294 64 294 75 301 76" />
+                  <path pathLength="1" d="M220 107C244 118 246 146 273 153C297 160 311 143 299 132C290 124 278 130 283 140" />
+                  <path pathLength="1" d="M175 113C178 136 195 139 193 159C190 178 164 180 164 163C164 150 178 149 180 157" />
+                  <path pathLength="1" d="M105 106C82 115 85 141 59 151C35 160 19 146 30 134C39 124 53 130 48 141" />
+                  <path pathLength="1" d="M88 90C61 82 48 98 24 88C6 80 5 61 18 64C28 66 27 78 18 78" />
+                </g>
+                <g className="vine-leaves">
+                  <path d="M50 29C36 27 31 17 33 10C44 8 54 13 57 22C57 26 54 29 50 29Z" />
+                  <path d="M151 20C143 10 148 2 155 0C163 7 164 15 159 22C156 24 153 23 151 20Z" />
+                  <path d="M270 34C277 22 288 21 294 25C293 36 287 43 278 44C273 43 270 39 270 34Z" />
+                  <path d="M294 87C305 81 314 86 316 93C309 101 300 103 293 98C290 94 291 90 294 87Z" />
+                  <path d="M273 152C285 152 291 160 289 168C279 172 269 168 266 159C266 155 269 152 273 152Z" />
+                  <path d="M191 158C201 166 198 176 192 180C182 176 177 168 181 160C183 156 187 155 191 158Z" />
+                  <path d="M59 150C52 162 41 163 35 158C37 147 43 141 52 141C57 142 59 146 59 150Z" />
+                  <path d="M25 88C14 94 5 89 3 82C10 74 19 72 27 77C30 81 29 85 25 88Z" />
+                </g>
+              </svg>
+              <span>Find my bridge</span><ArrowRight size={18} />
+            </Link>
             <a className="button button-quiet" href="#how">See how it works <ArrowDown size={17} /></a>
           </div>
           <p className="hero-note"><span>●</span> Live OpenStreetMap search · Reliable demos included</p>
