@@ -1,35 +1,74 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, MapPin, RotateCcw, Search, Share2, Sparkles } from "lucide-react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, LocateFixed, LoaderCircle, MapPin, RotateCcw, Search, Share2, Sparkles, Wifi } from "lucide-react";
 import { analyzeConnectivity } from "@/lib/connectivity";
-import { demoSpace, portlandHabitats } from "@/data/portland";
+import { habitatScenarios } from "@/data/scenarios";
 import { recommendPlants } from "@/data/plants";
+import { createLiveScenario } from "@/lib/live-scenario";
+import type { HabitatNode, HabitatScenario } from "@/lib/types";
 import type { SpaceType, Sunlight } from "@/lib/types";
 import { HabitatMap } from "./HabitatMap";
-import { Landing } from "./Landing";
 import { PlantCards } from "./PlantCards";
+
+const LeafletHabitatMap = dynamic(() => import("./LeafletHabitatMap").then((module) => module.LeafletHabitatMap), { ssr: false, loading: () => <div className="map map-loading"><LoaderCircle /> Loading live map…</div> });
 
 const spaces: { name: SpaceType; icon: string }[] = [
   { name: "Balcony", icon: "▤" }, { name: "Window", icon: "▥" }, { name: "Yard", icon: "⌂" }, { name: "Patio", icon: "▦" }, { name: "School / community", icon: "◇" },
 ];
-const before = analyzeConnectivity(portlandHabitats);
-const after = analyzeConnectivity([...portlandHabitats, demoSpace]);
-
 export function WildBridgeApp() {
+  const [scenario, setScenario] = useState<HabitatScenario>(habitatScenarios[0]);
+  const [query, setQuery] = useState("");
+  const [locationState, setLocationState] = useState<"idle" | "loading" | "live" | "error">("idle");
+  const [locationMessage, setLocationMessage] = useState("Portland demo ready · real location search available");
   const [space, setSpace] = useState<SpaceType>("Balcony");
   const [sunlight, setSunlight] = useState<Sunlight>("Full sun");
   const [size, setSize] = useState("Small · under 25 sq ft");
   const [configuring, setConfiguring] = useState(false);
   const [simulated, setSimulated] = useState(false);
   const [showAfter, setShowAfter] = useState(false);
-  const appRef = useRef<HTMLElement>(null);
+  const before = analyzeConnectivity(scenario.habitats, scenario.thresholdKm);
+  const after = analyzeConnectivity([...scenario.habitats, scenario.userSpace], scenario.thresholdKm);
   const recommendations = useMemo(() => recommendPlants(space, sunlight), [space, sunlight]);
   const newConnections = after.edges.length - before.edges.length;
 
-  const goToDemo = () => {
-    appRef.current?.scrollIntoView({ behavior: "smooth" });
-    setConfiguring(false); setSimulated(false); setShowAfter(false);
+  const selectScenario = (id: string) => {
+    const next = habitatScenarios.find((item) => item.id === id);
+    if (!next) return;
+    setScenario(next); setLocationState("idle"); setLocationMessage(`${next.region} demo loaded · ${next.habitats.length} habitat patches`); setConfiguring(false); setSimulated(false); setShowAfter(false);
+  };
+  const loadCoordinates = async (lat: number, lon: number, name: string) => {
+    setLocationState("loading"); setLocationMessage("Reading nearby OpenStreetMap habitat data…");
+    const response = await fetch(`/api/habitats?lat=${lat}&lon=${lon}`);
+    const data = await response.json() as { habitats?: HabitatNode[]; error?: string };
+    if (!response.ok || !data.habitats) throw new Error(data.error || "No nearby habitat data was found.");
+    const live = createLiveScenario(name, { lat, lon }, data.habitats);
+    setScenario(live); setLocationState("live"); setLocationMessage(`Live OpenStreetMap data · ${live.habitats.length} habitat patches`); setConfiguring(false); setSimulated(false); setShowAfter(false);
+  };
+  const searchLocation = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (query.trim().length < 2) return;
+    try {
+      setLocationState("loading"); setLocationMessage("Finding that location…");
+      const response = await fetch(`/api/geocode?q=${encodeURIComponent(query.trim())}`);
+      const data = await response.json() as { results?: { name: string; lat: number; lon: number }[]; error?: string };
+      if (!response.ok || !data.results?.length) throw new Error(data.error || "Location not found.");
+      const match = data.results[0]; setQuery(match.name.split(",").slice(0, 3).join(","));
+      await loadCoordinates(match.lat, match.lon, match.name);
+    } catch (error) {
+      setLocationState("error"); setLocationMessage(error instanceof Error ? `${error.message} Portland demo remains available.` : "Location search failed. Portland demo remains available.");
+    }
+  };
+  const useMyLocation = () => {
+    if (!navigator.geolocation) { setLocationState("error"); setLocationMessage("This browser does not support geolocation."); return; }
+    setLocationState("loading"); setLocationMessage("Waiting for location permission…");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => loadCoordinates(coords.latitude, coords.longitude, "Your current location").catch((error) => { setLocationState("error"); setLocationMessage(`${error.message} Portland demo remains available.`); }),
+      () => { setLocationState("error"); setLocationMessage("Location permission was unavailable. Search a place or use a demo."); },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
   };
   const simulate = () => {
     setConfiguring(false); setSimulated(true); setShowAfter(true);
@@ -37,28 +76,28 @@ export function WildBridgeApp() {
   };
 
   return <>
-    <Landing onDemo={goToDemo} />
-    <section className="app-section" ref={appRef} aria-label="WildBridge habitat explorer">
+    <section className="app-section explore-route" aria-label="WildBridge habitat explorer">
       <header className="app-header">
-        <a className="brand brand-light" href="#top"><span className="brand-mark"><i /><i /><i /></span>WildBridge</a>
+        <Link className="brand brand-light" href="/"><span className="brand-mark"><i /><i /><i /></span>WildBridge</Link>
         <div className="app-stepper" aria-label="Progress"><span className="active"><i>1</i> Explore</span><b /><span className={configuring || simulated ? "active" : ""}><i>2</i> Your space</span><b /><span className={simulated ? "active" : ""}><i>3</i> Impact</span></div>
-        <button className="demo-badge" onClick={goToDemo}><span /> Portland demo <ChevronDown size={15} /></button>
+        <div className={`demo-badge ${locationState === "live" ? "is-live" : ""}`}><span /> {locationState === "live" ? <><Wifi size={12} /> Live map</> : scenario.terrain}</div>
       </header>
 
       <div className="app-body">
         <div className="map-shell">
           <div className="search-card">
-            <form onSubmit={(event) => event.preventDefault()}><Search size={19} /><label className="sr-only" htmlFor="location">Search a location</label><input id="location" defaultValue="Portland, Oregon" /><button type="submit">Search</button></form>
-            <p><MapPin size={14} /> Demo coverage loaded · 6 habitat patches</p>
+            <form className="location-search" onSubmit={searchLocation}><Search size={19} /><label className="sr-only" htmlFor="location">Search a location</label><input id="location" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search any city or address" /><button type="submit" disabled={locationState === "loading" || query.trim().length < 2} aria-label="Search location">{locationState === "loading" ? <LoaderCircle className="spin" /> : <ArrowRight />}</button></form>
+            <div className="location-options"><button type="button" onClick={useMyLocation} disabled={locationState === "loading"}><LocateFixed /> Use my location</button><span>or</span><label className="sr-only" htmlFor="demo-location">Load a reliable demo landscape</label><select id="demo-location" value={scenario.id.startsWith("live-") ? "" : scenario.id} onChange={(event) => selectScenario(event.target.value)}><option value="" disabled>Demo landscape</option>{habitatScenarios.map((item) => <option value={item.id} key={item.id}>{item.region}</option>)}</select><ChevronDown size={13} /></div>
+            <p className={locationState === "error" ? "search-error" : ""} aria-live="polite"><MapPin size={14} /> {locationMessage}</p>
           </div>
-          <HabitatMap showAfter={showAfter} />
+          {scenario.id.startsWith("live-") ? <LeafletHabitatMap key={scenario.id} scenario={scenario} showAfter={showAfter} /> : <HabitatMap key={scenario.id} scenario={scenario} showAfter={showAfter} />}
           {simulated && <div className="view-toggle" aria-label="Map view"><button className={!showAfter ? "active" : ""} onClick={() => setShowAfter(false)}>Before</button><button className={showAfter ? "active" : ""} onClick={() => setShowAfter(true)}>After <Sparkles size={14} /></button></div>}
         </div>
 
         <aside className="side-panel">
           {!configuring && !simulated && <div className="panel-content explore-panel">
-            <button className="back-link" onClick={() => document.getElementById("top")?.scrollIntoView({ behavior: "smooth" })}><ArrowLeft size={16} /> Back to story</button>
-            <p className="panel-eyebrow">Neighborhood analysis</p><h2>A potential bridge is waiting.</h2><p>We found a weakly connected area between downtown habitat patches.</p>
+            <Link className="back-link" href="/"><ArrowLeft size={16} /> Back to story</Link>
+            <p className="panel-eyebrow">{scenario.terrain} analysis</p><h2>A potential bridge is waiting.</h2><p>We found a weakly connected area near {scenario.name}.</p>
             <div className="analysis-stat"><div><span>Bridge Score</span><b>{before.score}</b><small>/100</small></div><i style={{ "--score": `${before.score}%` } as React.CSSProperties} /></div>
             <div className="finding"><span>!</span><div><b>Connectivity gap detected</b><p>Two patches sit just beyond the current connection threshold.</p></div></div>
             <button className="button button-primary button-wide" onClick={() => setConfiguring(true)}>Add my space <ArrowRight size={18} /></button>
@@ -79,7 +118,7 @@ export function WildBridgeApp() {
             <p className="panel-eyebrow">Intervention simulated</p><h2>You created a potential bridge.</h2><p>Your {space.toLowerCase()} could act as a stepping stone between two nearby green spaces.</p>
             <div className="score-change"><div><small>Before</small><b>{before.score}</b></div><ArrowRight /><div className="after-score"><small>After</small><b>{after.score}</b></div><span>+{after.score - before.score}</span></div>
             <div className="impact-stats"><div><b>+{newConnections}</b><span>new graph<br />connections</span></div><div><b>{recommendations.length}</b><span>native plants<br />recommended</span></div></div>
-            <div className="summary" aria-label="Connectivity summary"><b>Connectivity summary</b><p>6 nearby green spaces were detected. Adding your selected space creates {newConnections} additional graph connections and increases the prototype Bridge Score from {before.score} to {after.score}.</p></div>
+            <div className="summary" aria-label="Connectivity summary"><b>Connectivity summary</b><p>{scenario.habitats.length} nearby green spaces were detected. Adding your selected space creates {newConnections} additional graph connections and increases the prototype Bridge Score from {before.score} to {after.score}.</p></div>
             <button className="reset-button" onClick={() => { setSimulated(false); setShowAfter(false); setConfiguring(true); }}><RotateCcw size={15} /> Adjust my space</button>
           </div>}
         </aside>
@@ -88,9 +127,9 @@ export function WildBridgeApp() {
       {simulated && <section className="recommendations" aria-labelledby="plant-title">
         <div className="recommendation-heading"><div><p className="panel-eyebrow">Plant your bridge</p><h2 id="plant-title">Native plants for your {space.toLowerCase()}</h2></div><p>Selected for <b>{sunlight.toLowerCase()}</b> and a <b>{size.split(" ·")[0].toLowerCase()}</b> space.</p></div>
         <PlantCards plants={recommendations} />
-        <div className="science-note"><span>i</span><p><b>About the model</b><br />WildBridge uses a distance-based habitat connectivity proxy for exploration and education—not a formal ecological assessment or planting prescription.</p></div>
+        <div className="science-note"><span>i</span><p><b>About the model</b><br />WildBridge uses a distance-based habitat connectivity proxy for exploration and education—not a formal ecological assessment or planting prescription. Plant suggestions are Pacific Northwest examples and should be locally verified.</p></div>
       </section>}
     </section>
-    <footer><div className="shell"><div><a className="brand" href="#top"><span className="brand-mark"><i /><i /><i /></span>WildBridge</a><p>Small spaces. Stronger connections.</p></div><p>Built for OregonHacks 2026 · Open data, responsible framing.</p></div></footer>
+    <footer><div className="shell"><div><Link className="brand" href="/"><span className="brand-mark"><i /><i /><i /></span>WildBridge</Link><p>Small spaces. Stronger connections.</p></div><p>Built for OregonHacks 2026 · Open data, responsible framing.</p></div></footer>
   </>;
 }

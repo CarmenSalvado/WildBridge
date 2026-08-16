@@ -4,7 +4,7 @@
 
 WildBridge is a map-driven urban habitat tool built for OregonHacks 2026. It reveals gaps between nearby green spaces and shows how a balcony, yard, patio, school garden, or window box could become a small stepping stone for nature.
 
-The complete judge demo takes under a minute: open the Portland demo, inspect a highlighted habitat gap, add a space, choose its conditions, and watch the connectivity graph recalculate in a clear before/after view.
+The complete judge demo takes under a minute: enter the habitat explorer, choose one of three Oregon landscapes, inspect a highlighted habitat gap, add a space, choose its conditions, and watch the connectivity graph recalculate in a clear before/after view.
 
 ## Inspiration
 
@@ -12,7 +12,10 @@ Urban nature is often fragmented into isolated patches. Parks, gardens, and tree
 
 ## What it does
 
-- Maps a reliable curated set of Portland green-space patches.
+- Maps reliable curated green-space scenarios for Portland, Eugene, and Bend.
+- Searches real locations worldwide through OpenStreetMap Nominatim or browser geolocation.
+- Retrieves nearby parks, gardens, woods, meadows, and protected areas through Overpass API.
+- Renders live OpenStreetMap tiles and graph overlays with Leaflet.
 - Represents those patches as nodes in a connectivity graph.
 - Highlights a possible gap between close but unconnected patches.
 - Lets a user configure a balcony, window, yard, patio, or community space.
@@ -23,15 +26,17 @@ Urban nature is often fragmented into isolated patches. Parks, gardens, and tree
 
 ## How we built it
 
-WildBridge uses Next.js, React, TypeScript, and CSS, with geographic coordinates compatible with OpenStreetMap data. The Portland Demo Mode uses a bundled fallback dataset so a slow or unavailable external map service can never break the core presentation. Leaflet is the intended renderer for the live OSM data path; the demo deliberately keeps its self-contained vector map as the no-network fallback.
+WildBridge uses Next.js, React, TypeScript, Leaflet, React Leaflet, and CSS. A server-side Nominatim route resolves explicit location searches, a bounded Overpass query retrieves nearby green spaces, and Leaflet renders OpenStreetMap tiles with graph edges and intervention nodes. The bundled Oregon demos remain the no-network fallback, so a slow public service can never break the core presentation.
 
 The technical flow is:
 
 **OpenStreetMap-compatible green-space data → approximate habitat nodes → Haversine distances → connectivity graph → intervention simulation → before/after visualization**
 
-The graph module creates an edge whenever two habitat centroids fall within a configurable distance threshold. It finds connected components, isolated nodes, edge density, and average nearest-neighbor distance, then normalizes those signals into the 0–100 Bridge Score. Adding a user space runs the exact same calculation again; the improvement is computed, not hard-coded.
+The graph module creates an edge whenever two habitat centroids fall within a configurable distance threshold. It finds connected components, isolated nodes, edge density, and average nearest-neighbor distance, then normalizes those signals into the 0–100 Bridge Score. Adding a user space runs the exact same calculation again; the improvement is computed, not hard-coded. Each landscape supplies the same small scenario contract—nodes, intervention, threshold, coordinates, and map labels—so adding another terrain does not require changing the UI or algorithm.
 
-The map is a self-contained accessible SVG rather than a fragile tile dependency. The standalone graph and recommendation modules can accept future live OSM/Overpass results without changing the product flow.
+Live searches use an attributed Leaflet map. Curated demos retain the self-contained accessible SVG, keeping the judge path deterministic while both map types use the same graph and scoring modules.
+
+The public geocoder is called only after an explicit form submission, identifies WildBridge with a dedicated User-Agent, and is cached by Next.js. OpenStreetMap attribution is always visible on live maps. Plant recommendations remain Pacific Northwest examples and must be locally verified when exploring other regions.
 
 ## Challenges
 

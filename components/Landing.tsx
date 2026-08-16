@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowDown, ArrowRight, Map, Network, Sprout } from "lucide-react";
 import { NetworkMotif } from "./NetworkMotif";
 
@@ -8,7 +9,7 @@ const steps = [
   ["04", "See the bridge", "Watch your potential connections come to life."],
 ];
 
-export function Landing({ onDemo }: { onDemo: () => void }) {
+export function Landing() {
   return (
     <main id="top">
       <nav className="nav shell" aria-label="Primary navigation">
@@ -16,7 +17,7 @@ export function Landing({ onDemo }: { onDemo: () => void }) {
         <div className="nav-links">
           <a href="#why">Why it matters</a>
           <a href="#how">How it works</a>
-          <button className="nav-cta" onClick={onDemo}>Try Portland demo <ArrowRight size={15} /></button>
+          <Link className="nav-cta" href="/explore">Open habitat explorer <ArrowRight size={15} /></Link>
         </div>
       </nav>
 
@@ -26,10 +27,10 @@ export function Landing({ onDemo }: { onDemo: () => void }) {
           <h1>Your smallest green space can connect <em>something bigger.</em></h1>
           <p className="hero-lede">WildBridge reveals gaps between urban habitats and shows how your balcony, yard, or window box could become a stepping stone for nature.</p>
           <div className="hero-actions">
-            <button className="button button-primary" onClick={onDemo}>Find my bridge <ArrowRight size={18} /></button>
+            <Link className="button button-primary" href="/explore">Find my bridge <ArrowRight size={18} /></Link>
             <a className="button button-quiet" href="#how">See how it works <ArrowDown size={17} /></a>
           </div>
-          <p className="hero-note"><span>●</span> No account needed · Portland demo ready</p>
+          <p className="hero-note"><span>●</span> Live OpenStreetMap search · Reliable demos included</p>
         </div>
         <div className="hero-visual" aria-hidden="false">
           <div className="hero-visual-label"><span>Habitat connectivity</span><b>Potential bridge found</b></div>

@@ -35,3 +35,15 @@ export type Plant = {
   color: string;
   icon: string;
 };
+
+export type HabitatScenario = {
+  id: string;
+  name: string;
+  region: string;
+  terrain: string;
+  center: { lat: number; lon: number };
+  habitats: HabitatNode[];
+  userSpace: HabitatNode;
+  thresholdKm: number;
+  labels: { area: string; district: string; water: string };
+};

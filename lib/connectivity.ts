@@ -63,10 +63,12 @@ export function analyzeConnectivity(nodes: HabitatNode[], thresholdKm = CONNECTI
 }
 
 export function findHabitatGap(nodes: HabitatNode[], thresholdKm = CONNECTION_THRESHOLD_KM) {
+  const components = analyzeConnectivity(nodes, thresholdKm).components;
+  const componentByNode = new Map(components.flatMap((component, index) => component.map((id) => [id, index] as const)));
   let best: { a: HabitatNode; b: HabitatNode; distanceKm: number } | undefined;
   nodes.forEach((a, index) => nodes.slice(index + 1).forEach((b) => {
     const distanceKm = haversine(a, b);
-    if (distanceKm > thresholdKm && distanceKm < thresholdKm * 2.2 && (!best || distanceKm < best.distanceKm)) best = { a, b, distanceKm };
+    if (componentByNode.get(a.id) !== componentByNode.get(b.id) && distanceKm > thresholdKm && distanceKm < thresholdKm * 2 && (!best || distanceKm < best.distanceKm)) best = { a, b, distanceKm };
   }));
   if (!best) return null;
   return { lat: (best.a.lat + best.b.lat) / 2, lon: (best.a.lon + best.b.lon) / 2, between: [best.a.name, best.b.name] as [string, string] };

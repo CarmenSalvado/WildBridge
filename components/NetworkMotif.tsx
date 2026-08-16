@@ -9,7 +9,7 @@ export function NetworkMotif() {
       <circle className="motif-node" cx="510" cy="54" r="22" />
       <circle className="motif-pulse" cx="290" cy="105" r="32" />
       <circle className="motif-bridge" cx="290" cy="105" r="16" />
-      <path className="motif-sprout" d="M290 110v-17m0 7c-8-1-12-6-12-12 8 0 12 4 12 12Zm0-4c7-1 11-5 11-11-7 0-11 4-11 11Z" />
+      <path className="motif-sprout" d="M290 89V66m0 10c-8-1-12-6-12-12 8 0 12 4 12 12Zm0-4c8-1 12-6 12-12-8 0-12 4-12 12Z" />
       <text x="46" y="184">park</text>
       <text x="267" y="156">you</text>
       <text x="474" y="111">garden</text>
