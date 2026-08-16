@@ -88,7 +88,7 @@ npm run build
 
 ## Explainer video
 
-The Remotion composition contains only explanatory motion graphics; the app recording is intentionally not included.
+The Remotion composition combines explanatory motion graphics, the app recording, music, and timed narration.
 
 ```bash
 npm run video:studio
