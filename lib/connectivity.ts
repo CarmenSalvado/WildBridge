@@ -45,13 +45,13 @@ export function analyzeConnectivity(nodes: HabitatNode[], thresholdKm = CONNECTI
       });
     }
     return component;
-  }).filter(Boolean);
+  }).filter((component) => component.length);
 
   const isolated = nodes.filter((node) => neighbors.get(node.id)?.size === 0).map((node) => node.id);
   const connectedRatio = nodes.length > 1 ? (nodes.length - components.length) / (nodes.length - 1) : 0;
   const edgeDensity = Math.min(1, edges.length / Math.max(nodes.length, 1));
   const isolationPenalty = isolated.length / Math.max(nodes.length, 1);
-  const score = Math.round(Math.max(0, Math.min(100, 22 + connectedRatio * 45 + edgeDensity * 28 - isolationPenalty * 18)));
+  const score = Math.round(Math.max(0, Math.min(100, 8 + connectedRatio * 48 + edgeDensity * 26 - isolationPenalty * 50)));
 
   return {
     edges,

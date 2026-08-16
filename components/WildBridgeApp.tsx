@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, MapPin, Maximize2, RotateCcw, Search, Share2, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, MapPin, RotateCcw, Search, Share2, Sparkles } from "lucide-react";
 import { analyzeConnectivity } from "@/lib/connectivity";
 import { demoSpace, portlandHabitats } from "@/data/portland";
 import { recommendPlants } from "@/data/plants";
@@ -75,7 +75,7 @@ export function WildBridgeApp() {
           </div>}
 
           {simulated && <div className="panel-content impact-panel" id="impact" tabIndex={-1}>
-            <div className="impact-top"><span><Check /></span><button aria-label="Share impact"><Share2 size={17} /></button></div>
+            <div className="impact-top"><span><Check /></span><i className="impact-share" aria-hidden="true"><Share2 size={17} /></i></div>
             <p className="panel-eyebrow">Intervention simulated</p><h2>You created a potential bridge.</h2><p>Your {space.toLowerCase()} could act as a stepping stone between two nearby green spaces.</p>
             <div className="score-change"><div><small>Before</small><b>{before.score}</b></div><ArrowRight /><div className="after-score"><small>After</small><b>{after.score}</b></div><span>+{after.score - before.score}</span></div>
             <div className="impact-stats"><div><b>+{newConnections}</b><span>new graph<br />connections</span></div><div><b>{recommendations.length}</b><span>native plants<br />recommended</span></div></div>
@@ -88,7 +88,7 @@ export function WildBridgeApp() {
       {simulated && <section className="recommendations" aria-labelledby="plant-title">
         <div className="recommendation-heading"><div><p className="panel-eyebrow">Plant your bridge</p><h2 id="plant-title">Native plants for your {space.toLowerCase()}</h2></div><p>Selected for <b>{sunlight.toLowerCase()}</b> and a <b>{size.split(" ·")[0].toLowerCase()}</b> space.</p></div>
         <PlantCards plants={recommendations} />
-        <div className="science-note"><span>i</span><p><b>About the model</b><br />WildBridge uses a distance-based habitat connectivity proxy for exploration and education—not a formal ecological assessment or planting prescription.</p><button><Maximize2 size={15} /> Methodology</button></div>
+        <div className="science-note"><span>i</span><p><b>About the model</b><br />WildBridge uses a distance-based habitat connectivity proxy for exploration and education—not a formal ecological assessment or planting prescription.</p></div>
       </section>}
     </section>
     <footer><div className="shell"><div><a className="brand" href="#top"><span className="brand-mark"><i /><i /><i /></span>WildBridge</a><p>Small spaces. Stronger connections.</p></div><p>Built for OregonHacks 2026 · Open data, responsible framing.</p></div></footer>

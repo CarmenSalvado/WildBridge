@@ -1,4 +1,7 @@
+"use client";
+
 import { LocateFixed, Minus, Plus, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { analyzeConnectivity, findHabitatGap } from "@/lib/connectivity";
 import { demoSpace, portlandHabitats } from "@/data/portland";
 import type { HabitatNode } from "@/lib/types";
@@ -10,6 +13,7 @@ const point = (node: Pick<HabitatNode, "lat" | "lon">) => ({
 });
 
 export function HabitatMap({ showAfter }: { showAfter: boolean }) {
+  const [zoom, setZoom] = useState(1);
   const nodes = showAfter ? [...portlandHabitats, demoSpace] : portlandHabitats;
   const analysis = analyzeConnectivity(nodes);
   const beforeEdges = new Set(analyzeConnectivity(portlandHabitats).edges.map((edge) => [edge.source, edge.target].sort().join("-")));
@@ -18,7 +22,7 @@ export function HabitatMap({ showAfter }: { showAfter: boolean }) {
 
   return (
     <div className={`map ${showAfter ? "is-after" : "is-before"}`}>
-      <svg className="map-canvas" viewBox="0 0 780 560" role="img" aria-labelledby="map-title map-desc">
+      <svg className="map-canvas" style={{ transform: `scale(${zoom})` }} viewBox="0 0 780 560" role="img" aria-labelledby="map-title map-desc">
         <title id="map-title">Portland habitat connectivity map</title>
         <desc id="map-desc">Six urban green-space patches around Portland. {showAfter ? "Your selected space is added with new dotted connections." : "A potential connectivity gap is marked between habitat patches."}</desc>
         <rect width="780" height="560" fill="#ebe9df" />
@@ -46,7 +50,7 @@ export function HabitatMap({ showAfter }: { showAfter: boolean }) {
         {showAfter && <g className="bridge-label" transform={`translate(${point(demoSpace).x - 76} ${point(demoSpace).y - 60})`}><rect width="152" height="35" rx="17" /><text x="76" y="22">YOUR NEW BRIDGE</text></g>}
       </svg>
       <div className="map-meta"><span>PORTLAND, OR</span><span>45.5231° N, 122.6765° W</span></div>
-      <div className="map-tools" aria-label="Map controls"><button aria-label="Zoom in"><Plus /></button><button aria-label="Zoom out"><Minus /></button><button aria-label="Center map"><LocateFixed /></button></div>
+      <div className="map-tools" aria-label="Map controls"><button aria-label="Zoom in" disabled={zoom >= 1.4} onClick={() => setZoom((value) => Math.min(1.4, value + .2))}><Plus /></button><button aria-label="Zoom out" disabled={zoom <= 1} onClick={() => setZoom((value) => Math.max(1, value - .2))}><Minus /></button><button aria-label="Reset map zoom" onClick={() => setZoom(1)}><LocateFixed /></button></div>
       {!showAfter && <div className="gap-card"><span><Sparkles size={15} /> Habitat gap</span><b>A stepping-stone could connect two nearby patches here.</b></div>}
     </div>
   );
